@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Paragram — Encrypted Communication Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #060608;
+      --surface: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.08);
+      --text: #f0eef8;
+      --muted: rgba(240,238,248,0.45);
+      --accent: #a78bfa;
+      --accent2: #60a5fa;
+      --glow: rgba(167,139,250,0.18);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Instrument Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── NOISE OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.6;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 48px;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.4s, background 0.4s, backdrop-filter 0.4s;
+    }
+    nav.scrolled {
+      background: rgba(6,6,8,0.75);
+      backdrop-filter: blur(20px);
+      border-bottom-color: var(--border);
+    }
+
+    .nav-logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.2rem;
+      letter-spacing: -0.02em;
+      background: linear-gradient(120deg, #fff 30%, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    .nav-cta {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 22px;
+      border-radius: 9px;
+      font-family: 'Instrument Sans', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.25s;
+      border: none;
+    }
+    .btn-primary {
+      background: var(--text);
+      color: var(--bg);
+    }
+    .btn-primary:hover {
+      background: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 32px rgba(167,139,250,0.25);
+    }
+    .btn-ghost {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover {
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(255,255,255,0.16);
+      transform: translateY(-1px);
+    }
+    .btn-outline-accent {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid rgba(167,139,250,0.35);
+    }
+    .btn-outline-accent:hover {
+      background: rgba(167,139,250,0.08);
+      border-color: var(--accent);
+    }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 140px 24px 80px;
+      overflow: hidden;
+    }
+
+    /* Radial glow behind hero text */
+    .hero-glow {
+      position: absolute;
+      width: 900px;
+      height: 600px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -56%);
+      background: radial-gradient(ellipse at center,
+        rgba(167,139,250,0.12) 0%,
+        rgba(96,165,250,0.06) 40%,
+        transparent 70%);
+      pointer-events: none;
+    }
+
+    /* Subtle grid */
+    .hero-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 80px 80px;
+      mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black 0%, transparent 100%);
+      pointer-events: none;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 6px 16px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 36px;
+      opacity: 0;
+      animation: fadeUp 0.8s 0.1s forwards;
+    }
+    .hero-eyebrow .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .hero-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: clamp(5rem, 15vw, 12rem);
+      letter-spacing: -0.04em;
+      line-height: 0.9;
+      position: relative;
+      opacity: 0;
+      animation: fadeUp 0.9s 0.25s forwards;
+    }
+
+    /* The Apple-style glowing text treatment */
+    .hero-title-inner {
+      display: block;
+      position: relative;
+      /* base color */
+      color: #fff;
+      /* metallic shine via layered background-clip text */
+      background: linear-gradient(
+        160deg,
+        #ffffff 0%,
+        #d4d0f0 25%,
+        #ffffff 45%,
+        #a78bfa 60%,
+        #60a5fa 75%,
+        #ffffff 100%
+      );
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 60px rgba(167,139,250,0.35)) drop-shadow(0 0 120px rgba(96,165,250,0.2));
+    }
+
+    .hero-sub {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: -0.01em;
+      margin-top: 20px;
+      opacity: 0;
+      animation: fadeUp 0.9s 0.4s forwards;
+    }
+
+    .hero-desc {
+      max-width: 480px;
+      margin: 16px auto 0;
+      font-size: 1rem;
+      line-height: 1.65;
+      color: rgba(240,238,248,0.38);
+      opacity: 0;
+      animation: fadeUp 0.9s 0.55s forwards;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 14px;
+      margin-top: 44px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: center;
+      opacity: 0;
+      animation: fadeUp 0.9s 0.7s forwards;
+    }
+
+    .hero-actions .btn-primary {
+      padding: 14px 32px;
+      font-size: 1rem;
+      border-radius: 12px;
+    }
+    .hero-actions .btn-ghost {
+      padding: 14px 28px;
+      font-size: 1rem;
+      border-radius: 12px;
+    }
+
+    .hero-actions .btn-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      align-self: center;
+      letter-spacing: 0.02em;
+    }
+
+    /* Lock icon SVG inline */
+    .icon { width: 16px; height: 16px; }
+
+    /* ── SCROLL INDICATOR ── */
+    .scroll-hint {
+      position: absolute;
+      bottom: 36px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      color: rgba(240,238,248,0.2);
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      opacity: 0;
+      animation: fadeUp 1s 1.2s forwards;
+    }
+    .scroll-pill {
+      width: 24px; height: 38px;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 100px;
+      display: flex;
+      justify-content: center;
+      padding-top: 6px;
+    }
+    .scroll-dot {
+      width: 3px; height: 8px;
+      background: rgba(255,255,255,0.3);
+      border-radius: 100px;
+      animation: scrollDot 2s infinite;
+    }
+    @keyframes scrollDot {
+      0% { transform: translateY(0); opacity: 1; }
+      100% { transform: translateY(10px); opacity: 0; }
+    }
+
+    /* ── FEATURES SECTION ── */
+    section {
+      position: relative;
+      z-index: 1;
+    }
+
+    .features {
+      padding: 120px 48px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      max-width: 600px;
+      margin-bottom: 72px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    .feat-card {
+      background: rgba(255,255,255,0.025);
+      padding: 40px 36px;
+      transition: background 0.3s;
+      position: relative;
+    }
+    .feat-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 0% 0%, rgba(167,139,250,0.06), transparent 60%);
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+    .feat-card:hover { background: rgba(255,255,255,0.04); }
+    .feat-card:hover::before { opacity: 1; }
+
+    .feat-icon {
+      width: 44px; height: 44px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      font-size: 1.2rem;
+    }
+    .feat-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      margin-bottom: 10px;
+    }
+    .feat-desc {
+      font-size: 0.875rem;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+
+    /* ── PRIVACY STATEMENT ── */
+    .privacy-band {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 80px 48px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .privacy-band::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 100% at 50% 50%, rgba(96,165,250,0.05) 0%, transparent 70%);
+    }
+    .privacy-quote {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(1.5rem, 3.5vw, 2.8rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      max-width: 760px;
+      margin: 0 auto 20px;
+    }
+    .privacy-quote em {
+      font-style: normal;
+      color: var(--accent);
+    }
+    .privacy-sub {
+      font-size: 0.95rem;
+      color: var(--muted);
+      max-width: 420px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* ── CTA SECTION ── */
+    .cta-section {
+      padding: 120px 48px;
+      text-align: center;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .cta-section .section-label { display: block; }
+    .cta-title {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2.5rem, 6vw, 5rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      margin-bottom: 20px;
+    }
+    .cta-desc {
+      font-size: 1.05rem;
+      color: var(--muted);
+      max-width: 440px;
+      margin: 0 auto 48px;
+      line-height: 1.65;
+    }
+    .cta-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .cta-buttons .btn {
+      padding: 16px 36px;
+      font-size: 1rem;
+      border-radius: 14px;
+    }
+    .cta-note {
+      margin-top: 20px;
+      font-size: 0.8rem;
+      color: rgba(240,238,248,0.25);
+      letter-spacing: 0.02em;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 48px;
+    }
+    .footer-top {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 48px;
+      max-width: 1200px;
+      margin: 0 auto 48px;
+    }
+    .footer-brand .logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.3rem;
+      letter-spacing: -0.02em;
+      background: linear-gradient(120deg, #fff 40%, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      display: inline-block;
+      margin-bottom: 12px;
+    }
+    .footer-brand p {
+      font-size: 0.82rem;
+      color: rgba(240,238,248,0.3);
+      line-height: 1.6;
+      max-width: 200px;
+    }
+    .footer-col h4 {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(240,238,248,0.4);
+      margin-bottom: 16px;
+    }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 10px; }
+    .footer-col a {
+      color: rgba(240,238,248,0.5);
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: color 0.2s;
+    }
+    .footer-col a:hover { color: var(--text); }
+
+    .footer-bottom {
+      border-top: 1px solid var(--border);
+      padding-top: 28px;
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .footer-bottom p {
+      font-size: 0.78rem;
+      color: rgba(240,238,248,0.25);
+    }
+    .footer-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: rgba(240,238,248,0.25);
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.7s, transform 0.7s;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: none;
+    }
+
+    /* ── MOBILE ── */
+    @media (max-width: 768px) {
+      nav { padding: 16px 24px; }
+      .nav-links { display: none; }
+      .features { padding: 80px 24px; }
+      .features-grid { grid-template-columns: 1fr; }
+      .privacy-band { padding: 60px 24px; }
+      .cta-section { padding: 80px 24px; }
+      footer { padding: 40px 24px; }
+      .footer-top { grid-template-columns: 1fr 1fr; gap: 32px; }
+      .footer-bottom { flex-direction: column; gap: 12px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav id="nav">
+    <div class="nav-logo">Paragram</div>
+    <ul class="nav-links">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#privacy">Privacy</a></li>
+      <li><a href="https://paragram.store" target="_blank" rel="noopener">Store</a></li>
+    </ul>
+    <div class="nav-cta">
+      <a href="https://paragram.app" target="_blank" rel="noopener" class="btn btn-primary">Open App</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero" aria-label="Hero">
+    <div class="hero-glow"></div>
+    <div class="hero-grid"></div>
+
+    <div class="hero-eyebrow">
+      <span class="dot"></span>
+      End-to-end encrypted
+    </div>
+
+    <h1 class="hero-title">
+      <span class="hero-title-inner">Paragram</span>
+    </h1>
+
+    <p class="hero-sub">The private messaging platform.</p>
+    <p class="hero-desc">
+      Real-time communication built for people who take privacy seriously. 
+      Servers, channels, DMs, everything encrypted. No ads, No data harvesting. 
+      
+    </p>
+
+    <div class="hero-actions">
+      <a href="https://paragram.app" target="_blank" rel="noopener" class="btn btn-primary">
+        <svg class="icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8 1C4.13 1 1 4.13 1 8s3.13 7 7 7 7-3.13 7-7-3.13-7-7-7zm0 2.5a2 2 0 110 4 2 2 0 010-4zm0 9.75A5.12 5.12 0 013.5 11c.03-1.67 3.33-2.58 4.5-2.58s4.47.91 4.5 2.58A5.12 5.12 0 018 13.25z" fill="currentColor"/>
+        </svg>
+        Start communicating
+      </a>
+      <a href="https://paragram.store" target="_blank" rel="noopener" class="btn btn-ghost">
+        Support the startup
+        <!-- small heart -->
+        <svg class="icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8 13.4l-1.05-.95C3.1 8.94 1 7.08 1 4.75 1 2.92 2.42 1.5 4.25 1.5c1 0 1.96.47 2.75 1.25.79-.78 1.75-1.25 2.75-1.25C11.58 1.5 13 2.92 13 4.75c0 2.33-2.1 4.19-5.95 7.7L8 13.4z" fill="rgba(167,139,250,0.7)"/>
+        </svg>
+      </a>
+    </div>
+
+    <div class="scroll-hint">
+      <div class="scroll-pill"><div class="scroll-dot"></div></div>
+      Scroll
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="features" id="features" aria-label="Features">
+    <p class="section-label reveal">What's inside</p>
+    <h2 class="section-title reveal">Everything you'd expect.<br>Nothing you wouldn't.</h2>
+
+    <div class="features-grid">
+      <div class="feat-card reveal">
+        <div class="feat-icon">🔐</div>
+        <div class="feat-title">End-to-End Encryption</div>
+        <p class="feat-desc">Every message, every file, every call, all Encrypted before it leaves your device.</p>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-icon">⚡</div>
+        <div class="feat-title">Real-Time Everything</div>
+        <p class="feat-desc">Instant messaging with typing indicators, presence, emoji reactions, threads and message history at zero latency.</p>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-icon">🏠</div>
+        <div class="feat-title">Servers & Channels</div>
+        <p class="feat-desc">Create communities with servers, categories and channels. Role-based permissions so everyone stays in their lane.</p>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-icon">📹</div>
+        <div class="feat-title">Video & Screen Share</div>
+        <p class="feat-desc">Crystal-clear video calls and screen sharing built right in. No third-party integrations, no extra downloads.</p>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-icon">🔍</div>
+        <div class="feat-title">Global Search</div>
+        <p class="feat-desc">Find any message, file, or channel instantly. A public server directory makes finding communities effortless.</p>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-icon">🛡️</div>
+        <div class="feat-title">Self-Hostable</div>
+        <p class="feat-desc">Deploy on your own infrastructure. Own your data completely. Paragram is designed to live wherever you want it to.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRIVACY BAND -->
+  <div class="privacy-band" id="privacy">
+    <p class="privacy-quote reveal">
+      Your conversations are <em>yours</em>.<br>Not ours. And definitely not your government's.
+    </p>
+    <p class="privacy-sub reveal">
+      No ads. No tracking. No selling your data to third parties. Paragram is 
+      funded by people who believe in private communication, not by monetising 
+      your attention.
+    </p>
+  </div>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <span class="section-label reveal">Ready?</span>
+    <h2 class="cta-title reveal">Join the conversation.</h2>
+    <p class="cta-desc reveal">
+      Most startups have a landing page and a waitlist. 
+      We have a working product. Come try it.
+    </p>
+    <div class="cta-buttons reveal">
+      <a href="https://paragram.app" target="_blank" rel="noopener" class="btn btn-primary">Open Paragram →</a>
+      <a href="https://paragram.store" target="_blank" rel="noopener" class="btn btn-outline-accent">Support the startup</a>
+    </div>
+    <p class="cta-note reveal">Free to use &nbsp;·&nbsp; No account data sold &nbsp;·&nbsp; Always encrypted</p>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="logo">Paragram</div>
+        <p>An encrypted communication platform built for people who care about their privacy.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="https://paragram.app" target="_blank" rel="noopener">Open App</a></li>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#privacy">Privacy</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Community</h4>
+        <ul>
+          <li><a href="https://paragram.store" target="_blank" rel="noopener">Store</a></li>
+          <li><a href="#">Changelog</a></li>
+          <li><a href="#">Roadmap</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Terms of Service</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 Paragram. All rights reserved.</p>
+      <span class="footer-badge">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 1C4.13 1 1 4.13 1 8s3.13 7 7 7 7-3.13 7-7-3.13-7-7-7zm0 2.5a2 2 0 110 4 2 2 0 010-4zm0 9.75A5.12 5.12 0 013.5 11c.03-1.67 3.33-2.58 4.5-2.58s4.47.91 4.5 2.58A5.12 5.12 0 018 13.25z" fill="currentColor"/></svg>
+        Hosted on paragram.cloud
+      </span>
+    </div>
+  </footer>
+
+  <script>
+    // Nav scroll effect
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 20);
+    }, { passive: true });
+
+    // Scroll reveal
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry, i) => {
+        if (entry.isIntersecting) {
+          // stagger siblings slightly
+          const siblings = [...entry.target.parentElement.querySelectorAll('.reveal')];
+          const idx = siblings.indexOf(entry.target);
+          setTimeout(() => entry.target.classList.add('visible'), idx * 80);
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12 });
+
+    reveals.forEach(el => observer.observe(el));
+  </script>
+</body>
+</html>
